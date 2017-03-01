@@ -37,6 +37,10 @@
 #define SQUELCH_OPEN_DELAY 500 // time delay (in ms) after opening squelch & before begining beacon tx
 
 #define USE_GPS
+#define GPS_LAT_OFFSET 0					// add privacy offset to coordinate latitude value, 10^6 
+#define GPS_LON_OFFSET 0					// same as above, for longitude value
+#define GPS_NO_FIX_MSG "NO FIX"		// message sent prior to valid fix
+#define GPS_FIX_TONE							// send high-pitch single tone to indicate fix state
 
 //#define DEBUG_ENCODE		// enable serial debug of morse encoding
 #define MORSE_TONE_HZ 600	// frequency of morse tone; spec says 600-800Hz is standard for CW comm's
@@ -525,9 +529,6 @@ void setup(void)
 }
 
 #ifdef USE_GPS
-#define GPS_LAT_OFFSET 0
-#define GPS_LON_OFFSET 0
-#define GPS_NO_FIX_MSG "NO FIX"
 extern struct gpsData gpsData; 
 extern GeodeticPosition currentPosition;
 uint8_t printFlag = 0;
@@ -549,6 +550,21 @@ void sendGPS(void)
 	
 	char tmp[100];
 	String latlon;
+	
+	#ifdef GPS_FIX_TONE
+	if(haveAGpsLock()){
+		beaconTone(900,100);
+		delay(80);
+		beaconTone(800,80);
+	}else{
+		beaconTone(200,100);
+		delay(80);
+		beaconTone(300,80);
+	}
+	delay(1200);
+	#endif
+	
+	
 	
 	if(printFlag)
 	{
