@@ -581,7 +581,8 @@ void sendGPS(void)
 	latlon.toCharArray(tmp, 100);
 	morseEncode(tmp);	
 	rfm_deinit();
-	initializeGps();
+	Serial.begin(gpsData.baudrate);
+	//initializeGps();
 }
 #endif
 

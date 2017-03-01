@@ -26,8 +26,7 @@
 #define UseGPSUBLOX
 #define GPS_SERIAL Serial
 
-struct gpsData gpsData; 
-//struct gpsData gpsData; // This is accessed by the parser functions directly !
+struct gpsData gpsData; // This is accessed by the parser functions directly !
 
 // default port
 // remove?
@@ -59,10 +58,7 @@ struct gpsData gpsData;
 #include <mtk16.h>
 #endif
 
-#define MIN_NB_SATS_IN_USE 5
-
-#define GPS2RAD (1.0/572957795.0)
-#define RAD2DEG 57.2957795
+#define MIN_NB_SATS_IN_USE 6
 
 GeodeticPosition currentPosition;
 
@@ -229,47 +225,6 @@ void updateGps() {
 
 boolean haveAGpsLock() {
   return (gpsData.state > GPS_NOFIX) && (gpsData.sats >= MIN_NB_SATS_IN_USE);
-}
-
-long getCourse() {
-  return gpsData.course / 1000; // to whole degrees
-}
-unsigned long getGpsSpeed() {
-  return gpsData.speed;
-}
-
-unsigned long getGpsFixTime() {
-  return gpsData.fixtime;
-}
-
-unsigned long getGpsAltitude() {
-  return gpsData.height;
-}
-
-void setProjectionLocation(struct GeodeticPosition pos) {
-
-  cosLatitude = cos((float)pos.latitude * GPS2RAD);
-}
-
-float gpsRawDistance = 0.0;
-float gpsBearing = 0;
-
-void computeDistanceAndBearing(struct GeodeticPosition p1, struct GeodeticPosition p2) {
-
-  const float x = (float)(p2.longitude - p1.longitude) * GPS2RAD * cosLatitude;
-  const float y = (float)(p2.latitude - p1.latitude) * GPS2RAD;
-  gpsRawDistance = sqrt(x*x+y*y);
-  gpsBearing = (RAD2DEG * atan2(x,y));
-}
-
-float getDistanceMeter() {
-
-  return (gpsRawDistance * 6371009);
-}
-
-float getDistanceFoot() {
-
-  return (gpsRawDistance * 20903280);
 }
 
 #endif
