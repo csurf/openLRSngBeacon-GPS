@@ -133,7 +133,8 @@ struct ublox_NAV_POSLLH { // 01 02 (28)
   uint32_t cAcc; // deg 1e-5
 };
  */
-union ublox_message {
+
+ union ublox_message {
   struct ublox_NAV_STATUS nav_status;
   struct ublox_NAV_POSLLH nav_posllh;
   // struct ublox_NAV_VELNED nav_velned;
@@ -150,13 +151,11 @@ enum ubloxState{ WAIT_SYNC1, WAIT_SYNC2, GET_CLASS, GET_ID, GET_LL, GET_LH, GET_
 
 // Initialize parser
 void ubloxInit() {
-  
-  ubloxProcessDataState = WAIT_SYNC1;
+	ubloxProcessDataState = WAIT_SYNC1;
 }
 
 // process complete binary packet
 void ubloxParseData() {// uses publib vars
-
   gpsData.sentences++;
   if (ubloxClass==1) { // NAV
     if (ubloxId==2) { // NAV:POSLLH

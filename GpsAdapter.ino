@@ -18,9 +18,6 @@
   along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef _AQ_GPS_ADAPTER_H_
-#define _AQ_GPS_ADAPTER_H_
-
 #include "GpsDataType.h"
 
 #define UseGPSUBLOX
@@ -237,5 +234,3 @@ void updateGps() {
 boolean haveAGpsLock() {
   return (gpsData.state > GPS_NOFIX) && (gpsData.sats >= MIN_NB_SATS_IN_USE);
 }
-
-#endif

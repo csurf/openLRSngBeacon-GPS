@@ -16,6 +16,7 @@
 #include "GpsDataType.h"
 
 // 3 = OpenLRS Rx v2 Board or OrangeRx UHF RX
+// #define BOARD_TYPE 3
 #define BOARD_TYPE 5
 
 //###### SERIAL PORT SPEED - just debugging atm. #######
@@ -25,7 +26,7 @@
 #define EU_PMR_CH(x) (445993750L + 12500L * (x)) // valid for ch 1 - 8
 #define US_FRS_CH(x) (462537500L + 25000L * (x)) // valid for ch 1 - 7
 
-//#define BEACON_FREQUENCY US_FRS_CH(1)
+// #define BEACON_FREQUENCY US_FRS_CH(1)
 #define BEACON_FREQUENCY 461000000
 
 #define BEACON_DEADTIME 0 // time to wait until going into beacon mode (s)
@@ -373,6 +374,7 @@ uint8_t rfmGetRSSI(void)
 
 // **** Beacon tone routines
 uint16_t beaconRSSIavg = 255;
+
 uint8_t checkBeaconRSSI(void)
 {
 	uint8_t r = 0;
@@ -404,25 +406,6 @@ uint8_t beaconGetRSSI(void)
 	return rssiSUM >> 2;
 }
 
-/* void beaconSend(void)
-{
-	rfm_init();
-	beaconSquelch();
-	spiWriteRegister(0x6d, BEACON_POWER_HI);
-	delay(10);
-	beaconTone(800, 1000);
-
-	spiWriteRegister(0x6d, BEACON_POWER_MED);
-	delay(10);
-	beaconTone(600, 1000);
-
-	spiWriteRegister(0x6d, BEACON_POWER_LOW);
-	delay(10);
-	beaconTone(410, 1000);
-
-	rfm_deinit();
-} */
-
 void beaconCE3K(void)
 {
 	// close encounters tune
@@ -432,7 +415,7 @@ void beaconCE3K(void)
 	rfm_tx();
 	beaconSquelch();
 	
-	beaconTone(391, 1000);
+	beaconTone(392, 1000);
 
 	spiWriteRegister(0x6d, 0x05);   // 5 set mid power 25mW
 	delay(10);
@@ -444,7 +427,7 @@ void beaconCE3K(void)
 
 	spiWriteRegister(0x6d, 0x02);   // 2 set min power 3mW
 	delay(10);
-	beaconTone(174,1000);
+	beaconTone(175,1000);
 
 	spiWriteRegister(0x6d, 0x00);   // 0 set min power 1.3mW
 	delay(10);
