@@ -327,11 +327,8 @@ void rfm_init(void)
 	spiWriteRegister(0x0e, 0x00);    // gpio    0, 1,2 NO OTHER FUNCTION.
 
 	spiWriteRegister(0x70, 0x2C);    // disable manchest
-
 	spiWriteRegister(0x30, 0x00);    //disable packet handling
-
 	spiWriteRegister(0x79, 0);    // start channel
-
 	spiWriteRegister(0x7a, 0x05);   // 50khz step size (10khz x value) // no hopping
 
 	spiWriteRegister(0x71, 0x12);   // trclk=[00] no clock, dtmod=[01] direct using SPI, fd8=0 eninv=0 modtyp=[10] FSK
@@ -512,12 +509,12 @@ void sendGPS(void)
 	}
 	else
 	{
-		char tmp[100];
+		char tmp[15];
 		String latlon;
 
-		if(printFlag == 0)
+		if( printFlag == 0 )
 		{
-			latlon=String(currentPosition.latitude+GPS_LAT_OFFSET);	
+			latlon = String(currentPosition.latitude+GPS_LAT_OFFSET);	
 			beaconTone(900,100);
 			delay(80);
 			beaconTone(800,80);
@@ -546,7 +543,6 @@ void sendGPS(void)
 	}
 	rfm_deinit();
 	resetGpsPort();
-	//initializeGps();
 }
 #endif
 
@@ -558,9 +554,9 @@ void sendGPS(void)
 #define TASK_10HZ 10
 #define TASK_1HZ 100
 
-uint32_t currTime;
+uint32_t currTime = 0;
 uint32_t prevTime = micros();
-uint32_t deltaTime;
+uint32_t deltaTime = 0;
 uint8_t frameCounter = 0;
 
 void setup(void)
