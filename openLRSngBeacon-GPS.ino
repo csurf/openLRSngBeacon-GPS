@@ -550,32 +550,33 @@ void sendGPS(void)
 	
 	char tmp[100];
 	String latlon;
-	
-	#ifdef GPS_FIX_TONE
-	if(haveAGpsLock()){
+
+	if(printFlag == 0)
+	{
+		latlon=String(currentPosition.latitude+GPS_LAT_OFFSET);	
 		beaconTone(900,100);
 		delay(80);
 		beaconTone(800,80);
-	}else{
+	}
+	else 
+	{
+		latlon=String(currentPosition.longitude+GPS_LON_OFFSET);
 		beaconTone(200,100);
 		delay(80);
 		beaconTone(300,80);
 	}
-	delay(1200);
+	delay(1000);
+	printFlag = !printFlag;
+	
+	#ifdef GPS_FIX_TONE
+	if(haveAGpsLock()){
+		beaconTone(475,500);
+	}else{
+		beaconTone(150,500);
+	}
+	delay(500);	
 	#endif
 	
-	
-	
-	if(printFlag)
-	{
-		latlon=String(currentPosition.longitude+GPS_LON_OFFSET);
-	}
-	else 
-	{
-		latlon=String(currentPosition.latitude+GPS_LAT_OFFSET);
-	}
-
-	printFlag != printFlag;
 	
 	latlon.toCharArray(tmp, 100);
 	morseEncode(tmp);	
