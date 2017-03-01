@@ -37,11 +37,11 @@
 #define SQUELCH_OPEN_DELAY 500 // time delay (in ms) after opening squelch & before begining beacon tx
 
 #define USE_GPS
-#define GPS_LAT_OFFSET 0					// add privacy offset to coordinate latitude value, 10^6 
-#define GPS_LON_OFFSET 0					// same as above, for longitude value
-#define GPS_NO_FIX_MSG "NO FIX"		// message sent prior to valid fix
-#define GPS_FIX_TONE							// send fix state tone: high-pitch = 3D fix :: low-pitch = no 3D lock / tx "last known coords"
-#define GPS_UNSIGNED			// don't transmit coordinate sign/hyphen 
+#define GPS_LAT_OFFSET 0				// add a 'privacy' offset to latitude value,  10^6 range (integer coords) 
+#define GPS_LON_OFFSET 0				// same as above, offset for longitude value
+#define GPS_NO_FIX_MSG "NO FIX"				// message sent prior to valid fix
+#define GPS_FIX_TONE				// send fix state tone: high-pitch = 3D fix / tx current coords :: low-pitch = no 3D lock / tx "last known coords"
+#define GPS_UNSIGNED				// don't transmit coordinate sign/hyphen 
 
 // USAGE NOTES:
 // - GPS coords are sent separately
