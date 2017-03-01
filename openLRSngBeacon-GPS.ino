@@ -30,7 +30,7 @@
 
 #define BEACON_DEADTIME 0 // time to wait until going into beacon mode (s)
 #define BEACON_INTERVAL 320 // interval between beacon transmits (s)
-
+#define BEACON_RSSI_TRIGGER_DELAY 2 // time delay (in sec) after receiving RSSI trigger & before tx'ing beacon
 
 #define SQUELCH_TONE_HZ 10  // frequency (in hertz) of sub-audible tone used to open squelch
 #define SQUELCH_OPEN_LEN 100 // length of squelch open tone transmission
@@ -404,7 +404,7 @@ uint8_t beaconGetRSSI(void)
 	return rssiSUM >> 2;
 }
 
-void beaconSendvoid()
+/* void beaconSend(void)
 {
 	rfm_init();
 	beaconSquelch();
@@ -421,7 +421,7 @@ void beaconSendvoid()
 	beaconTone(410, 1000);
 
 	rfm_deinit();
-}
+} */
 
 void beaconCE3K(void)
 {
@@ -637,7 +637,7 @@ void loop10Hz(void)
 {
 	if(checkBeaconRSSI())
 	{
-		beaconDelay = 2;
+		beaconDelay = BEACON_RSSI_TRIGGER_DELAY;
 	}
 }
 
