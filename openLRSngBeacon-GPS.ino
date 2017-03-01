@@ -36,19 +36,22 @@
 #define SQUELCH_OPEN_LEN 100 // length of squelch open tone transmission
 #define SQUELCH_OPEN_DELAY 500 // time delay (in ms) after opening squelch & before begining beacon tx
 
-#define USE_GPS
-#define GPS_LAT_OFFSET 0				// add a 'privacy' offset to latitude value,  10^6 range (integer coords) 
-#define GPS_LON_OFFSET 0				// same as above, offset for longitude value
-#define GPS_NO_FIX_MSG "NO FIX"				// message sent prior to valid fix
-#define GPS_FIX_TONE				// send fix state tone: high-pitch = 3D fix / tx current coords :: low-pitch = no 3D lock / tx "last known coords"
-#define GPS_UNSIGNED				// don't transmit coordinate sign/hyphen 
 
+// GPS MORSE BEACON
 // USAGE NOTES:
 // - GPS coords are sent separately
 // ** lat is sent 1st, indicated by high-pitched tone sequence ("bee-boop")
 // ** lon is sent 2nd, indicated by low-pitched tone sequence ("boo-beep")
 // - fix tone (if enabled) is sent next, followed by morse code sequence
 // - transmissions can be manually initiated by tx'ing on beacon frequency within range of beacon
+// - GREEN LED will flash @ 1Hz (along w/ red LED) if GPS packets are being received & processed
+
+#define USE_GPS				// enable for GPS morse beacon, disable for standard 'close encounters' power ladder beacon
+#define GPS_LAT_OFFSET 0				// add a 'privacy' offset to latitude value,  10^6 range (integer coords) 
+#define GPS_LON_OFFSET 0				// same as above, offset for longitude value
+#define GPS_NO_FIX_MSG "NO FIX"				// message sent prior to valid fix
+#define GPS_FIX_TONE				// send fix state tone: high-pitch = 3D fix / tx current coords :: low-pitch = no 3D lock / tx "last known coords"
+#define GPS_UNSIGNED				// don't transmit coordinate sign/hyphen 
 
 
 //#define DEBUG_ENCODE		// enable serial debug of morse encoding
