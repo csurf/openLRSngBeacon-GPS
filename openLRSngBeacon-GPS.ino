@@ -41,6 +41,7 @@
 #define GPS_LON_OFFSET 0					// same as above, for longitude value
 #define GPS_NO_FIX_MSG "NO FIX"		// message sent prior to valid fix
 #define GPS_FIX_TONE							// send high-pitch single tone to indicate fix state
+#define GPS_UNSIGNED			// don't transmit coordinate sign/hyphen 
 
 //#define DEBUG_ENCODE		// enable serial debug of morse encoding
 #define MORSE_TONE_HZ 600	// frequency of morse tone; spec says 600-800Hz is standard for CW comm's
@@ -538,48 +539,46 @@ void sendGPS(void)
 	rfm_init();
 	rfm_tx();
 	beaconSquelch();	
-
+	Serial.end();
 	if(!initialLock)
 	{
 		morseEncode(GPS_NO_FIX_MSG);
-		rfm_deinit();
 		printFlag = 0;
-		return;
 	}
-	Serial.end();
-	
-	char tmp[100];
-	String latlon;
+	else
+	{
+		char tmp[100];
+		String latlon;
 
-	if(printFlag == 0)
-	{
-		latlon=String(currentPosition.latitude+GPS_LAT_OFFSET);	
-		beaconTone(900,100);
-		delay(80);
-		beaconTone(800,80);
+		if(printFlag == 0)
+		{
+			latlon=String(currentPosition.latitude+GPS_LAT_OFFSET);	
+			beaconTone(900,100);
+			delay(80);
+			beaconTone(800,80);
+		}
+		else 
+		{
+			latlon=String(currentPosition.longitude+GPS_LON_OFFSET);
+			beaconTone(200,100);
+			delay(80);
+			beaconTone(300,80);
+		}
+		delay(1000);
+		printFlag = !printFlag;
+		
+		#ifdef GPS_FIX_TONE
+		if(haveAGpsLock()){
+			beaconTone(475,500);
+		}else{
+			beaconTone(150,500);
+		}
+		delay(500);	
+		#endif
+
+		latlon.toCharArray(tmp, 100);
+		morseEncode(tmp);	
 	}
-	else 
-	{
-		latlon=String(currentPosition.longitude+GPS_LON_OFFSET);
-		beaconTone(200,100);
-		delay(80);
-		beaconTone(300,80);
-	}
-	delay(1000);
-	printFlag = !printFlag;
-	
-	#ifdef GPS_FIX_TONE
-	if(haveAGpsLock()){
-		beaconTone(475,500);
-	}else{
-		beaconTone(150,500);
-	}
-	delay(500);	
-	#endif
-	
-	
-	latlon.toCharArray(tmp, 100);
-	morseEncode(tmp);	
 	rfm_deinit();
 	Serial.begin(gpsData.baudrate);
 	//initializeGps();
@@ -592,36 +591,37 @@ void sendGPS(void)
 #define TASK_1HZ 100
 
 uint32_t currTime;
-uint32_t prevTime=micros();
+uint32_t prevTime = micros();
 uint32_t deltaTime;
-uint32_t frameCounter=0;
+uint8_t frameCounter = 0;
 
 void loop(void)
 {
-	currTime=micros();
-	deltaTime=currTime-prevTime;
+	currTime = micros();
+	deltaTime = ( currTime - prevTime );
 	
-	if(deltaTime >= 10000 )
+	if( deltaTime >= 10000 )
 	{
 		frameCounter++;
 		loop100Hz();
 		
-		if(frameCounter % TASK_10HZ == 0 )
+		if( frameCounter % TASK_10HZ == 0 )
 		{
 			loop10Hz();
 		}
 		
-		if(frameCounter % TASK_1HZ == 0 )
+		if( frameCounter % TASK_1HZ == 0 )
 		{
 			loop1Hz();
 		}
 		
-		if (frameCounter >= 100) {
+		if( frameCounter >= 100) {
 			frameCounter = 0;
 		}
 		prevTime = currTime;
 	}
 }
+
 void loop10Hz(void)
 {
 	if(checkBeaconRSSI())
@@ -629,6 +629,7 @@ void loop10Hz(void)
 		beaconDelay = 2;
 	}
 }
+
 void loop100Hz(void)
 {
 	#ifdef USE_GPS
@@ -639,6 +640,7 @@ void loop100Hz(void)
 	}
 	#endif
 }
+
 void loop1Hz(void)
 {
 	if (0 == beaconDelay) {
@@ -654,7 +656,9 @@ void loop1Hz(void)
 		Green_LED_OFF;
 		Red_LED_OFF;
 		beaconDelay = BEACON_INTERVAL;
-	} else {
+	} 
+	else 
+	{
 			Red_LED_ON;
 			if(gpsData.state > 0){
 				Green_LED_ON;

@@ -61,13 +61,24 @@ void morseEncode(const char *string)
 {
 	size_t i, j;
 	for( i = 0; string[i]; ++i ) {
+		
+		// hack to prevent printing hypen
+		// to avoid math on coord values
+		#ifdef GPS_UNSIGNED
+		if(string[i] == '-'){
+			continue;
+		}
+		#endif
+		
 		for( j = 0; j < sizeof MorseMap / sizeof *MorseMap; ++j ) {
 			if( toupper(string[i]) == MorseMap[j].letter ) {
+				
 				#ifdef DEBUG_ENCODE
 				Serial.print(MorseMap[j].letter);
 				Serial.print(" | ");
 				Serial.println(MorseMap[j].code);
 				#endif
+				
 				morseSend(MorseMap[j].code);
 				break;
 			}
