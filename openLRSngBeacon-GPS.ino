@@ -9,10 +9,8 @@
 // https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=DSWGKGKPRX5CS
 
 
-#include <stdlib.h>
-#include <math.h>
-#include "Arduino.h"
-#include "pins_arduino.h"
+#include <Arduino.h>
+// #include <EEPROM.h>
 #include "GpsDataType.h"
 
 // 3 = OpenLRS Rx v2 Board or OrangeRx UHF RX
@@ -27,7 +25,7 @@
 #define US_FRS_CH(x) (462537500L + 25000L * (x)) // valid for ch 1 - 7
 
 // #define BEACON_FREQUENCY US_FRS_CH(1)
-#define BEACON_FREQUENCY 461000000
+#define BEACON_FREQUENCY 438000000
 
 #define BEACON_DEADTIME 0 // time to wait until going into beacon mode (s)
 #define BEACON_INTERVAL 320 // interval between beacon transmits (s)
@@ -92,12 +90,13 @@
 #define MINPWM 1000
 #define MAXPWM 1500
 
+
+
+
 //####################
 //### CODE SECTION ###
 //####################
 
-#include <Arduino.h>
-#include <EEPROM.h>
 
 #if (BOARD_TYPE == 3)
 
@@ -177,10 +176,6 @@
 #define nSel_pin 4
 #endif
 
-uint8_t spiReadRegister(uint8_t address);
-void spiWriteRegister(uint8_t address, uint8_t data);
-
-#define NOP() __asm__ __volatile__("nop")
 
 #define RF22B_PWRSTATE_POWERDOWN    0x00
 #define RF22B_PWRSTATE_READY        0x01
@@ -190,17 +185,22 @@ void spiWriteRegister(uint8_t address, uint8_t data);
 
 #define RF22B_Rx_packet_received_interrupt   0x02
 
+
+
+
+// **** SPI / BIT BANG ROUTINES *****
+
+#define NOP() __asm__ __volatile__("nop")
+
 uint8_t ItStatus1, ItStatus2;
-
+uint8_t spiReadRegister(uint8_t address);
+void spiWriteRegister(uint8_t address, uint8_t data);
 void spiWriteBit(uint8_t b);
-
 void spiSendCommand(uint8_t command);
 void spiSendAddress(uint8_t i);
 uint8_t spiReadData(void);
 void spiWriteData(uint8_t i);
 
-
-// **** SPI bit banging functions
 void spiWriteBit(uint8_t b)
 {
 	if (b) {
@@ -293,7 +293,9 @@ void spiWriteRegister(uint8_t address, uint8_t data)
 	nSEL_on;
 }
 
-// **** RFM setup/config routines
+
+// ***** RFM SETUP/CONFIG ROUTINES *****
+
 void rfmSetCarrierFrequency(uint32_t f)
 {
 	uint16_t fb, fc, hbsel;
@@ -372,7 +374,8 @@ uint8_t rfmGetRSSI(void)
 }
 
 
-// **** Beacon tone routines
+// ***** BEACON ROUTINES *****
+uint32_t beaconDelay = BEACON_DEADTIME;
 uint16_t beaconRSSIavg = 255;
 
 uint8_t checkBeaconRSSI(void)
@@ -462,15 +465,20 @@ void beaconSquelch(void)
 }
 
 
-uint32_t beaconDelay = BEACON_DEADTIME;
-
-volatile uint16_t startPulse = 0;
+// ***** PPM INPUT ROUTINES *****
 
 #define TIMER1_PRESCALER    8
+volatile uint16_t startPulse = 0;
 
-/****************************************************
- * Interrupt Vector
- ****************************************************/
+void setupPPMinput(void)
+{
+	// Setup timer1 for input capture (PSC=8 -> 0.5ms precision)
+	TCCR1A = ((1 << WGM10) | (1 << WGM11));
+	TCCR1B = ((1 << WGM12) | (1 << WGM13) | (1 << CS11) | (1 << ICES1));
+	OCR1A = 0xffff;
+	TIMSK1 |= (1 << ICIE1);   // Enable timer1 input capture interrupt
+}
+
 ISR(TIMER1_CAPT_vect)
 {
   if (TCCR1B & (1 << ICES1)) {
@@ -484,44 +492,7 @@ ISR(TIMER1_CAPT_vect)
   TCCR1B ^= (1 << ICES1); // change trigger edge
 }
 
-void setupPPMinput(void)
-{
-	// Setup timer1 for input capture (PSC=8 -> 0.5ms precision)
-	TCCR1A = ((1 << WGM10) | (1 << WGM11));
-	TCCR1B = ((1 << WGM12) | (1 << WGM13) | (1 << CS11) | (1 << ICES1));
-	OCR1A = 0xffff;
-	TIMSK1 |= (1 << ICIE1);   // Enable timer1 input capture interrupt
-}
-
-void setup(void)
-{
-	//RF module pins
-	pinMode(SDO_pin, INPUT);   //SDO
-	pinMode(SDI_pin, OUTPUT);   //SDI
-	pinMode(SCLK_pin, OUTPUT);   //SCLK
-	pinMode(IRQ_pin, INPUT);   //IRQ
-	pinMode(nSel_pin, OUTPUT);   //nSEL
-
-	//LED and other interfaces
-	pinMode(Red_LED, OUTPUT);   //RED LED
-	pinMode(Green_LED, OUTPUT);   //GREEN LED
-
-	pinMode(PPM_IN, INPUT);   //PPM from TX
-	digitalWrite(PPM_IN, HIGH); // enable pullup for TX:s with open collector output
-
-	Serial.begin(SERIAL_BAUD_RATE);
-
-	setupPPMinput();
-
-	sei();
-
-	beaconDelay = BEACON_DEADTIME;
-
-	#ifdef USE_GPS
-	delay(1000);
-	initializeGps();
-	#endif
-}
+// ***** GPS ROUTINES *****
 
 #ifdef USE_GPS
 extern struct gpsData gpsData; 
@@ -579,6 +550,9 @@ void sendGPS(void)
 }
 #endif
 
+
+// ***** MAIN LOOP FUNCTIONS *****
+
 #define TASK_100HZ 1
 #define TASK_50HZ 2
 #define TASK_10HZ 10
@@ -588,6 +562,36 @@ uint32_t currTime;
 uint32_t prevTime = micros();
 uint32_t deltaTime;
 uint8_t frameCounter = 0;
+
+void setup(void)
+{
+	//RF module pins
+	pinMode(SDO_pin, INPUT);   //SDO
+	pinMode(SDI_pin, OUTPUT);   //SDI
+	pinMode(SCLK_pin, OUTPUT);   //SCLK
+	pinMode(IRQ_pin, INPUT);   //IRQ
+	pinMode(nSel_pin, OUTPUT);   //nSEL
+
+	//LED and other interfaces
+	pinMode(Red_LED, OUTPUT);   //RED LED
+	pinMode(Green_LED, OUTPUT);   //GREEN LED
+
+	pinMode(PPM_IN, INPUT);   //PPM from TX
+	digitalWrite(PPM_IN, HIGH); // enable pullup for TX:s with open collector output
+
+	Serial.begin(SERIAL_BAUD_RATE);
+
+	setupPPMinput();
+
+	sei();
+
+	beaconDelay = BEACON_DEADTIME;
+
+	#ifdef USE_GPS
+	delay(1000);
+	initializeGps();
+	#endif
+}
 
 void loop(void)
 {
@@ -663,4 +667,3 @@ void loop1Hz(void)
 			beaconDelay--;
 	}
 }
-
