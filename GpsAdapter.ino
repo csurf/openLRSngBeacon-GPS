@@ -142,7 +142,6 @@ void gpsSendConfig() {
 
 // Initialize GPS subsystem (called once after powerup)
 void initializeGps() {
-
     gpsData.baudrate = 0;
     GPS_SERIAL.begin(gpsBaudRates[gpsData.baudrate]);
     for (gpsData.type=0; (gpsData.type < GPS_NUMTYPES); gpsData.type++) {
@@ -151,6 +150,18 @@ void initializeGps() {
     initializeGpsData();
  }
 
+ 
+void resetGpsPort(void) {
+	GPS_SERIAL.begin(gpsBaudRates[gpsData.baudrate]);
+	gpsData.idlecount=0;
+	
+    // reinitialize parsers
+	for (gpsData.type=0; (gpsData.type < GPS_NUMTYPES); gpsData.type++) {
+		gpsTypes[gpsData.type].init();
+	}
+	updateGps();
+}
+ 
 // Read data from GPS, this should be called at 100Hz to make sure no data is lost
 // due to overflowing serial input buffer
 void updateGps() {

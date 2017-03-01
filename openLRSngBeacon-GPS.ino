@@ -40,8 +40,16 @@
 #define GPS_LAT_OFFSET 0					// add privacy offset to coordinate latitude value, 10^6 
 #define GPS_LON_OFFSET 0					// same as above, for longitude value
 #define GPS_NO_FIX_MSG "NO FIX"		// message sent prior to valid fix
-#define GPS_FIX_TONE							// send high-pitch single tone to indicate fix state
+#define GPS_FIX_TONE							// send fix state tone: high-pitch = 3D fix :: low-pitch = no 3D lock / tx "last known coords"
 #define GPS_UNSIGNED			// don't transmit coordinate sign/hyphen 
+
+// USAGE NOTES:
+// - GPS coords are sent separately
+// ** lat is sent 1st, indicated by high-pitched tone sequence ("bee-boop")
+// ** lon is sent 2nd, indicated by low-pitched tone sequence ("boo-beep")
+// - fix tone (if enabled) is sent next, followed by morse code sequence
+// - transmissions can be manually initiated by tx'ing on beacon frequency within range of beacon
+
 
 //#define DEBUG_ENCODE		// enable serial debug of morse encoding
 #define MORSE_TONE_HZ 600	// frequency of morse tone; spec says 600-800Hz is standard for CW comm's
@@ -580,7 +588,7 @@ void sendGPS(void)
 		morseEncode(tmp);	
 	}
 	rfm_deinit();
-	Serial.begin(gpsData.baudrate);
+	resetGpsPort();
 	//initializeGps();
 }
 #endif
