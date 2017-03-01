@@ -93,8 +93,8 @@ void morseEncode(const char *string)
 
 void morseSend(const char *code)
 {
-	uint8_t l = strlen(code); //255 char max
-	for(uint8_t i = 0 ; i < l; i++) // loop until null?
+	uint8_t l = strlen(code); //255 char max input string
+	for( uint8_t i = 0 ; i < l; i++ ) // find a better loop?
 	{ 
 		char c = code[i];
 		switch( c)

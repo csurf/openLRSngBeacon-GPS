@@ -19,15 +19,15 @@
 */
 /* simple UBLOX parser */
 
-#ifndef _AQ_ublox_H_
-#define _AQ_ublox_H_
+#ifndef _ublox_H_
+#define _ublox_H_
 
 static const unsigned char UBX_5HZ[] = {
 	0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0xC8, 
 	0x00, 0x01, 0x00, 0x01, 0x00, 0xDE, 0x6A 
 };
 
-static const uint8_t UBX_MSG_NAV[] = {
+static const unsigned char UBX_MSG_NAV[] = {
     0xB5, 0x62, 0x06, 0x01, 0x03, 0x00, 0x01, 0x02, 0x01, 0x0E, 0x47,           // set POSLLH MSG rate
     0xB5, 0x62, 0x06, 0x01, 0x03, 0x00, 0x01, 0x03, 0x01, 0x0F, 0x49,           // set STATUS MSG rate
     0xB5, 0x62, 0x06, 0x01, 0x03, 0x00, 0x01, 0x06, 0x01, 0x12, 0x4F,           // set SOL MSG rate
@@ -35,7 +35,7 @@ static const uint8_t UBX_MSG_NAV[] = {
 //    0xB5, 0x62, 0x06, 0x01, 0x03, 0x00, 0x01, 0x12, 0x01, 0x1E, 0x67            // set VELNED MSG rate
 };
 
-static const uint8_t UBX_MSG_NMEA[] = {
+static const unsigned char UBX_MSG_NMEA[] = {
     // DISABLE NMEA messages
     0xB5, 0x62, 0x06, 0x01, 0x03, 0x00, 0xF0, 0x05, 0x00, 0xFF, 0x19,           // VGS: Course over ground and Ground speed
     0xB5, 0x62, 0x06, 0x01, 0x03, 0x00, 0xF0, 0x03, 0x00, 0xFD, 0x15,           // GSV: GNSS Satellites in View
@@ -74,8 +74,9 @@ static const uint8_t ubloxInit_NAV5_Airborne4G[] = {
 #define UBLOX_5HZ   {UBX_5HZ, sizeof(UBX_5HZ)}
 #define UBLOX_MSG_NAV  {UBX_MSG_NAV, sizeof(UBX_MSG_NAV)}
 #define UBLOX_MSG_NMEA {UBX_MSG_NMEA, sizeof(UBX_MSG_NMEA)}
-#define UBLOX_38400 {(unsigned char *)"$PUBX,41,1,0003,0003,38400,0*24\r\n",0}
-#define UBLOX_CONFIGS UBLOX_5HZ, UBLOX_MSG_NMEA, UBLOX_MSG_NAV, UBLOX_38400
+#define UBLOX_38400 {(unsigned char *)"$PUBX,41,1,0003,0001,38400,0*26\r\n",0} // inav
+//#define UBLOX_38400 {(unsigned char *)"$PUBX,41,1,0003,0003,38400,0*24\r\n",0} // aq orig
+#define UBLOX_CONFIGS UBLOX_MSG_NMEA, UBLOX_MSG_NAV, UBLOX_5HZ, UBLOX_38400
 
 // UBLOX binary message definitions
 struct ublox_NAV_STATUS { // 01 03 (16)
