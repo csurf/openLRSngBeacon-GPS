@@ -64,8 +64,8 @@
 #define GPS_FIX_TONE				// send fix state tone: high-pitch = 3D fix / tx current coords :: low-pitch = no 3D lock / tx "last known coords"
 #define GPS_FLOAT				// send float values instead of scaled integers
 #define GPS_LAT_OFFSET  0				// add a 'privacy' offset to latitude value
-#define GPS_LON_OFFSET 0				// same as above, offset for longitude value
-
+#define GPS_LON_OFFSET 0			// same as above, offset for longitude value
+#define GPS_ALT_COORDS		//alternate the sending of lat & lon values on each transmission
 
 //#define DEBUG_ENCODE		// enable serial debug of morse encoding
 #define MORSE_TONE_HZ 750	// frequency of morse tone; spec says 600-800Hz is standard for CW comm's
@@ -518,12 +518,12 @@ void sendGPS(void)
 		printFlag = 0;
 	}
 	else
-	{
+	{	
 		if( printFlag == 0 )
 		{
 			#ifdef GPS_FLOAT
 			float lat = ( (((float) currentPosition.latitude) / 10000000. ) + GPS_LAT_OFFSET );
-			dtostrf(lat,12,7,tmp );
+			dtostrf(lat,11,7,tmp );
 			#else
 			sprintf(tmp, "%ld", ( currentPosition.latitude + GPS_LAT_OFFSET ));
 			#endif
@@ -551,14 +551,14 @@ void sendGPS(void)
 		#ifdef GPS_FIX_TONE
 		if(haveAGpsLock()){
 			beaconTone(475, 500);
-		}else{
+		} else {
 			beaconTone(150, 500);
 		}
 		delay(800);	
 		#endif
-
+		morseEncode(":: ");
 		morseEncode(tmp);	
-		
+
 		#ifdef GPS_USE_CALLSIGN
 		// beaconTone(420,30);
 		// delay(80);
@@ -576,7 +576,6 @@ void sendGPS(void)
 		delay(800);
 		rfm_deinit();
 		resetGpsPort();
-
 	}
 }
 #endif
