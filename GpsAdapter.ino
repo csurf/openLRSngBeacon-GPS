@@ -91,7 +91,6 @@ const struct gpsType gpsTypes[] = {
 #define GPS_MAXIDLE 500           // 5 seconds at 100Hz
 
 void initializeGpsData() {
-
   gpsData.lat = GPS_INVALID_ANGLE;
   gpsData.lon = GPS_INVALID_ANGLE;
   gpsData.course = GPS_INVALID_ANGLE;
@@ -150,13 +149,6 @@ void initializeGps() {
  
 void resetGpsPort(void) {
 	GPS_SERIAL.begin(gpsBaudRates[gpsData.baudrate]);
-	gpsData.idlecount=0;
-	
-    // reinitialize parsers
-	for (gpsData.type=0; (gpsData.type < GPS_NUMTYPES); gpsData.type++) {
-		gpsTypes[gpsData.type].init();
-	}
-	updateGps();
 }
  
 // Read data from GPS, this should be called at 100Hz to make sure no data is lost
@@ -194,7 +186,6 @@ void updateGps() {
       gpsData.idlecount=0;
       currentPosition.latitude=gpsData.lat;
       currentPosition.longitude=gpsData.lon;
-      currentPosition.altitude=gpsData.height;
     }
   }
 
@@ -230,7 +221,6 @@ void updateGps() {
     initializeGpsData();
   }
 }
-
 boolean haveAGpsLock() {
   return (gpsData.state > GPS_NOFIX) && (gpsData.sats >= MIN_NB_SATS_IN_USE);
 }
