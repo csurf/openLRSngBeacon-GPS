@@ -69,7 +69,7 @@
 
 //#define DEBUG_ENCODE		// enable serial debug of morse encoding
 #define MORSE_TONE_HZ 750	// frequency of morse tone; spec says 600-800Hz is standard for CW comm's
-#define MORSE_WPM 20			// set morse speed in words-per-minute
+#define MORSE_WPM 30			// set morse speed in words-per-minute
 // #define MORSE_DOT_MS 85	// set morse unit ('dot') speed in millisec's
 
 
