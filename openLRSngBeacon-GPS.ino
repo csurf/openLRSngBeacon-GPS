@@ -13,23 +13,35 @@
 // #include <EEPROM.h>
 #include "GpsDataType.h"
 
-// 3 = OpenLRS Rx v2 Board or OrangeRx UHF RX
-// #define BOARD_TYPE 3
+
+// #define BOARD_TYPE 3	// OpenLRS Rx v2 Board or OrangeRx UHF RX
 #define BOARD_TYPE 5
 
 //###### SERIAL PORT SPEED - just debugging atm. #######
 #define SERIAL_BAUD_RATE 115200 //115.200 baud serial port speed
 
-// helpper macro for European PMR and US FRS channels
+// helper macro for European PMR and US FRS channels
 #define EU_PMR_CH(x) (445993750L + 12500L * (x)) // valid for ch 1 - 8
 #define US_FRS_CH(x) (462537500L + 25000L * (x)) // valid for ch 1 - 7
 
 // #define BEACON_FREQUENCY US_FRS_CH(1)
 #define BEACON_FREQUENCY 438000000
 
+// power levels with RFM22B
+// 7 - 100mW
+// 6 - 50mW
+// 5 - 25mW
+// 4 - 13mW
+// 3 - 6mW
+// 2 - 3mW
+// 1 - 1.6mW
+// 0 - 1.3mW
+#define BEACON_POWER_LEVEL 0x01
+
 #define BEACON_DEADTIME 0 // time to wait until going into beacon mode (s)
 #define BEACON_INTERVAL 320 // interval between beacon transmits (s)
 #define BEACON_RSSI_TRIGGER_DELAY 2 // time delay (in sec) after receiving RSSI trigger & before tx'ing beacon
+#define BEACON_RSSI_TRIGGER_THRESHOLD 20 // rssi threshold value needed to trigger beacon
 
 #define SQUELCH_TONE_HZ 10  // frequency (in hertz) of sub-audible tone used to open squelch
 #define SQUELCH_OPEN_LEN 100 // length of squelch open tone transmission
@@ -46,44 +58,32 @@
 // - GREEN LED will flash @ 1Hz (along w/ red LED) if GPS packets are being received & processed
 
 #define USE_GPS				// enable for GPS morse beacon, disable for standard 'close encounters' power ladder beacon
-#define GPS_LAT_OFFSET 0				// add a 'privacy' offset to latitude value,  10^6 range (integer coords) 
-#define GPS_LON_OFFSET 0				// same as above, offset for longitude value
+
 #define GPS_NO_FIX_MSG "NO FIX"				// message sent prior to valid fix
+#define GPS_USE_CALLSIGN "CSRF"
 #define GPS_FIX_TONE				// send fix state tone: high-pitch = 3D fix / tx current coords :: low-pitch = no 3D lock / tx "last known coords"
-#define GPS_UNSIGNED				// don't transmit coordinate sign/hyphen 
+#define GPS_FLOAT				// send float values instead of scaled integers
+#define GPS_LAT_OFFSET  0				// add a 'privacy' offset to latitude value
+#define GPS_LON_OFFSET 0				// same as above, offset for longitude value
 
 
 //#define DEBUG_ENCODE		// enable serial debug of morse encoding
-#define MORSE_TONE_HZ 600	// frequency of morse tone; spec says 600-800Hz is standard for CW comm's
-#define MORSE_DOT_LEN 85 	// unit length in ms, larger value = slower sequences
+#define MORSE_TONE_HZ 750	// frequency of morse tone; spec says 600-800Hz is standard for CW comm's
+#define MORSE_WPM 20			// set morse speed in words-per-minute
+// #define MORSE_DOT_MS 85	// set morse unit ('dot') speed in millisec's
+
+
+#ifdef MORSE_WPM
+	#define MORSE_DOT_LEN ( 1200 / MORSE_WPM )
+#elif defined MORSE_DOT_MS
+	#define MORSE_DOT_LEN MORSE_DOT_MS
+#else
+	#define MORSE_DOT_LEN 80 	// unit length in ms, larger value = slower sequences
+#endif
 #define MORSE_DASH_LEN              ( 3 * MORSE_DOT_LEN )
 #define MORSE_CHARSPACE_LEN    ( 2 * MORSE_DOT_LEN ) // should be 3, but an additional space is included after each char is encoded, totalling 3
 #define MORSE_WORDSPACE_LEN   ( 6 * MORSE_DOT_LEN ) // should be 7, (same as above)
 
-#define FULL_POWER_MODE 0  // Set to 1 for 100mW operation, need HAM license
-
-// power levels with RFM22B
-// 7 - 100mW
-// 6 - 50mW
-// 5 - 25mW
-// 4 - 13mW
-// 3 - 6mW
-// 2 - 3mW
-// 1 - 1.6mW
-// 0 - 1.3mW
-
-
-#if (FULL_POWER_MODE == 1)
-// 100/15/1mW better range
-#define BEACON_POWER_HI  0x07  // 100mW
-#define BEACON_POWER_MED 0x04  // 13mW
-#define BEACON_POWER_LOW 0x00  // 1.3mW
-#else
-// 25/6/1.3mW mostly legal
-#define BEACON_POWER_HI  0x05  // 25mW
-#define BEACON_POWER_MED 0x03  // 6mW
-#define BEACON_POWER_LOW 0x00  // 1.1mW
-#endif
 
 // Servovalues considered 'good' i.e. beacon will not activate when it is fed
 // with PWM within these limits (feed via ch4 connector)
@@ -182,10 +182,7 @@
 #define RF22B_PACKET_SENT_INTERRUPT 0x04
 #define RF22B_PWRSTATE_RX           0x05
 #define RF22B_PWRSTATE_TX           0x09
-
 #define RF22B_Rx_packet_received_interrupt   0x02
-
-
 
 
 // **** SPI / BIT BANG ROUTINES *****
@@ -347,7 +344,7 @@ void rfm_deinit(void)
 
 void rfm_tx(void)
 {
-	spiWriteRegister(0x6d, BEACON_POWER_HI);
+	spiWriteRegister(0x6d, BEACON_POWER_LEVEL);
 	delay(10);
 	spiWriteRegister(0x07, RF22B_PWRSTATE_TX);    // to tx mode
 	delay(10);
@@ -372,6 +369,7 @@ uint8_t rfmGetRSSI(void)
 
 
 // ***** BEACON ROUTINES *****
+
 uint32_t beaconDelay = BEACON_DEADTIME;
 uint16_t beaconRSSIavg = 255;
 
@@ -379,7 +377,7 @@ uint8_t checkBeaconRSSI(void)
 {
 	uint8_t r = 0;
 	uint8_t brssi = beaconGetRSSI();
-	if (brssi > ((beaconRSSIavg>>2) + 20)) {
+	if (brssi > ((beaconRSSIavg >> 2) + BEACON_RSSI_TRIGGER_THRESHOLD )) {
 		r = 1;
 	}
 	beaconRSSIavg = (beaconRSSIavg * 3 + brssi * 4) >> 2;
@@ -492,57 +490,94 @@ ISR(TIMER1_CAPT_vect)
 // ***** GPS ROUTINES *****
 
 #ifdef USE_GPS
+
 extern struct gpsData gpsData; 
 extern GeodeticPosition currentPosition;
 uint8_t printFlag = 0;
 uint8_t initialLock = 0;
+char tmp[40]="";
+
 void sendGPS(void)
 {
+	Serial.end();
+	
 	rfm_init();
 	rfm_tx();
 	beaconSquelch();	
-	Serial.end();
-	if(!initialLock)
+
+	if(initialLock == 0 && haveAGpsLock())
+	{
+		initialLock = 1;
+	}
+	
+	if(initialLock == 0)
 	{
 		morseEncode(GPS_NO_FIX_MSG);
+		rfm_deinit();
+		resetGpsPort();
 		printFlag = 0;
 	}
 	else
 	{
-		char tmp[15];
-		String latlon;
-
 		if( printFlag == 0 )
 		{
-			latlon = String(currentPosition.latitude+GPS_LAT_OFFSET);	
-			beaconTone(900,100);
+			#ifdef GPS_FLOAT
+			float lat = ( (((float) currentPosition.latitude) / 10000000. ) + GPS_LAT_OFFSET );
+			dtostrf(lat,12,7,tmp );
+			#else
+			sprintf(tmp, "%ld", ( currentPosition.latitude + GPS_LAT_OFFSET ));
+			#endif
+			
+			beaconTone(900, 100);
 			delay(80);
-			beaconTone(800,80);
+			beaconTone(800, 80);
 		}
 		else 
 		{
-			latlon=String(currentPosition.longitude+GPS_LON_OFFSET);
-			beaconTone(200,100);
+			#ifdef GPS_FLOAT
+			float lon = ( (((float) currentPosition.longitude) / 10000000. ) + GPS_LON_OFFSET );
+			dtostrf(lon,12,7,tmp );
+			#else
+			sprintf(tmp, "%ld",( currentPosition.longitude + GPS_LON_OFFSET ));
+			#endif
+			
+			beaconTone(200, 100);
 			delay(80);
-			beaconTone(300,80);
+			beaconTone(300, 80);
 		}
 		delay(1000);
 		printFlag = !printFlag;
 		
 		#ifdef GPS_FIX_TONE
 		if(haveAGpsLock()){
-			beaconTone(475,500);
+			beaconTone(475, 500);
 		}else{
-			beaconTone(150,500);
+			beaconTone(150, 500);
 		}
-		delay(500);	
+		delay(800);	
 		#endif
 
-		latlon.toCharArray(tmp, 100);
 		morseEncode(tmp);	
+		
+		#ifdef GPS_USE_CALLSIGN
+		// beaconTone(420,30);
+		// delay(80);
+		// beaconTone(420,30);
+		// delay(80);
+		// beaconTone(420,30);
+		delay(MORSE_WORDSPACE_LEN);
+		morseEncode(GPS_USE_CALLSIGN);
+		delay(800);
+		#endif
+		
+		beaconTone(500, 120);
+		delay(80);
+		beaconTone(500, 80);
+		delay(800);
+		rfm_deinit();
+		resetGpsPort();
+
 	}
-	rfm_deinit();
-	resetGpsPort();
 }
 #endif
 
@@ -552,12 +587,13 @@ void sendGPS(void)
 #define TASK_100HZ 1
 #define TASK_50HZ 2
 #define TASK_10HZ 10
+#define TASK_5HZ 20
 #define TASK_1HZ 100
 
 uint32_t currTime = 0;
 uint32_t prevTime = micros();
 uint32_t deltaTime = 0;
-uint8_t frameCounter = 0;
+uint16_t frameCounter = 0;
 
 void setup(void)
 {
@@ -585,6 +621,7 @@ void setup(void)
 
 	#ifdef USE_GPS
 	delay(1000);
+	//Serial.begin(115200);
 	initializeGps();
 	#endif
 }
@@ -603,7 +640,10 @@ void loop(void)
 		{
 			loop10Hz();
 		}
-		
+		if( frameCounter % TASK_5HZ == 0 )
+		{
+			loop5Hz();
+		}
 		if( frameCounter % TASK_1HZ == 0 )
 		{
 			loop1Hz();
@@ -616,7 +656,8 @@ void loop(void)
 	}
 }
 
-void loop10Hz(void)
+void loop10Hz(){}
+void loop5Hz(void)
 {
 	if(checkBeaconRSSI())
 	{
@@ -628,10 +669,6 @@ void loop100Hz(void)
 {
 	#ifdef USE_GPS
 	updateGps();
-	if(initialLock == 0 && haveAGpsLock())
-	{
-		initialLock = 1;
-	}
 	#endif
 }
 
@@ -642,6 +679,7 @@ void loop1Hz(void)
 		Green_LED_ON;
 
 		#ifdef USE_GPS
+		//debugMorse();
 		sendGPS();
 		#else
 		beaconCE3K();			

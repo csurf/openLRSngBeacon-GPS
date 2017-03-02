@@ -51,9 +51,8 @@ enum {
 #define GPS_INVALID_POSITION {GPS_INVALID_ANGLE, GPS_INVALID_ANGLE, 0}
 
 struct GeodeticPosition {
-  long latitude;
-  long longitude;
-  long altitude;
+  int32_t latitude;
+  int32_t longitude;
 };
 
 struct gpsData {

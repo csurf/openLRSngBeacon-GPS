@@ -1,11 +1,25 @@
 // simple morse encoder 
-// based on code found here:
+// based partly on code found here:
 // https://gist.github.com/madc/4474559
+
 
 // remove unwanted char's to save space
 // parser wll simply ignore them
 static const struct {const char letter, *code;} MorseMap[] =
 {
+	{ '1', ".----" },
+	{ '2', "..---" },
+	{ '3', "...--" },
+	{ '4', "....-" },
+	{ '5', "....." },
+	{ '6', "-...." },
+	{ '7', "--..." },
+	{ '8', "---.." },
+	{ '9', "----." },
+	{ '0', "-----" },	
+	{ '.', ".-.-.-" },
+	{ '-', "-....-" },
+	{ ' ', "     " }, //Gap between word, seven units 	
 	{ 'A', ".-" },
 	{ 'B', "-..." },
 	{ 'C', "-.-." },
@@ -16,7 +30,7 @@ static const struct {const char letter, *code;} MorseMap[] =
 	{ 'H', "...." },
 	{ 'I', ".." },
 	{ 'J', ".---" },
-	{ 'K', ".-.-" },
+	{ 'K', "-.-" },
 	{ 'L', ".-.." },
 	{ 'M', "--" },
 	{ 'N', "-." },
@@ -32,19 +46,7 @@ static const struct {const char letter, *code;} MorseMap[] =
 	{ 'X', "-..-" },
 	{ 'Y', "-.--" },
 	{ 'Z', "--.." },
-	{ ' ', "     " }, //Gap between word, seven units 
-	{ '1', ".----" },
-	{ '2', "..---" },
-	{ '3', "...--" },
-	{ '4', "....-" },
-	{ '5', "....." },
-	{ '6', "-...." },
-	{ '7', "--..." },
-	{ '8', "---.." },
-	{ '9', "----." },
-	{ '0', "-----" },
-	{ '.', ".-.-.-" },
-	{ '-', "-....-" },
+	
 	{ ',', "--..--" },
 	{ '?', "..--.." },
 	{ '!', "-.-.--" },
@@ -59,18 +61,13 @@ static const struct {const char letter, *code;} MorseMap[] =
 
 void morseEncode(const char *string)
 {
-	size_t i, j;
-	for( i = 0; string[i]; ++i ) {
-		
-		// hack to prevent printing hypen
-		// to avoid math on coord values
-		#ifdef GPS_UNSIGNED
-		if(string[i] == '-'){
-			continue;
-		}
-		#endif
-		
-		for( j = 0; j < sizeof MorseMap / sizeof *MorseMap; ++j ) {
+	size_t i, j, l;
+	l = strlen(string);
+	
+	size_t m =  sizeof MorseMap / sizeof *MorseMap;
+	
+	for( i = 0; i < l; i++) {
+		for( j = 0; j < m; j++ ) {
 			if( toupper(string[i]) == MorseMap[j].letter ) {
 				
 				#ifdef DEBUG_ENCODE
@@ -80,10 +77,11 @@ void morseEncode(const char *string)
 				#endif
 				
 				morseSend(MorseMap[j].code);
+				delay(MORSE_CHARSPACE_LEN); // mandatory pause after each char
 				break;
 			}
 		}
-		delay(MORSE_CHARSPACE_LEN); // mandatory pause after each char
+		
 	}
 	#ifdef DEBUG_ENCODE
 	Serial.println();
