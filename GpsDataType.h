@@ -57,10 +57,6 @@ struct GeodeticPosition {
 
 struct gpsData {
     int32_t  lat,lon;  // position as degrees (*10E7)
-    int32_t  course;   // degrees (*10E5)
-    uint32_t speed;    // cm/s
-    int32_t  height;   // mm (from ellipsoid)
-    uint32_t accuracy; // mm
     uint32_t fixage;   // fix 
     uint32_t fixtime;  // fix 
     uint32_t sentences; // sentences/packets processed from gps (just statistics)

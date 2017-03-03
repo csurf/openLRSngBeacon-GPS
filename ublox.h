@@ -162,8 +162,6 @@ void ubloxParseData() {// uses publib vars
     if (ubloxId==2) { // NAV:POSLLH
       gpsData.lat = ubloxMessage.nav_posllh.lat;
       gpsData.lon = ubloxMessage.nav_posllh.lon;
-      gpsData.height = ubloxMessage.nav_posllh.height;
-      gpsData.accuracy = ubloxMessage.nav_posllh.hAcc;
       gpsData.fixtime = ubloxMessage.nav_posllh.iTow;
     }
     else if (ubloxId==3) { //NAV:STATUS

@@ -93,10 +93,6 @@ const struct gpsType gpsTypes[] = {
 void initializeGpsData() {
   gpsData.lat = GPS_INVALID_ANGLE;
   gpsData.lon = GPS_INVALID_ANGLE;
-  gpsData.course = GPS_INVALID_ANGLE;
-  gpsData.speed = GPS_INVALID_SPEED;
-  gpsData.height = GPS_INVALID_ALTITUDE;
-  gpsData.accuracy = GPS_INVALID_ACCURACY;
   gpsData.fixage = GPS_INVALID_AGE;
   gpsData.state = GPS_DETECTING;
   gpsData.sentences = 0;

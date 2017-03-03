@@ -58,7 +58,6 @@
 // - GREEN LED will flash @ 1Hz (along w/ red LED) if GPS packets are being received & processed
 
 #define USE_GPS				// enable for GPS morse beacon, disable for standard 'close encounters' power ladder beacon
-
 #define GPS_NO_FIX_MSG "NO FIX"				// message sent prior to valid fix
 #define GPS_USE_CALLSIGN "CSRF"
 #define GPS_FIX_TONE				// send fix state tone: high-pitch = 3D fix / tx current coords :: low-pitch = no 3D lock / tx "last known coords"
@@ -89,9 +88,6 @@
 // with PWM within these limits (feed via ch4 connector)
 #define MINPWM 1000
 #define MAXPWM 1500
-
-
-
 
 //####################
 //### CODE SECTION ###
@@ -655,20 +651,23 @@ void loop(void)
 	}
 }
 
+void loop100Hz(void)
+{
+	#ifdef USE_GPS
+	updateGps();
+	#endif
+}
+
+void loop50Hz(){}
+
 void loop10Hz(){}
+
 void loop5Hz(void)
 {
 	if(checkBeaconRSSI())
 	{
 		beaconDelay = BEACON_RSSI_TRIGGER_DELAY;
 	}
-}
-
-void loop100Hz(void)
-{
-	#ifdef USE_GPS
-	updateGps();
-	#endif
 }
 
 void loop1Hz(void)
@@ -691,9 +690,11 @@ void loop1Hz(void)
 	else 
 	{
 			Red_LED_ON;
+			#ifdef USE_GPS
 			if(gpsData.state > 0){
 				Green_LED_ON;
 			}			
+			#endif
 			delay(2);
 			Red_LED_OFF;
 			Green_LED_OFF;
