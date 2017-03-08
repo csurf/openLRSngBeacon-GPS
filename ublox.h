@@ -19,9 +19,9 @@
 */
 /* simple UBLOX parser */
 
-#ifndef _ublox_H_
-#define _ublox_H_
-
+#ifndef _UBLOX_H_
+#define _UBLOX_H_
+/*
 static const unsigned char UBX_5HZ[] = {
 	0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0xC8, 
 	0x00, 0x01, 0x00, 0x01, 0x00, 0xDE, 0x6A 
@@ -31,7 +31,7 @@ static const unsigned char UBX_MSG_NAV[] = {
     0xB5, 0x62, 0x06, 0x01, 0x03, 0x00, 0x01, 0x02, 0x01, 0x0E, 0x47,           // set POSLLH MSG rate
     0xB5, 0x62, 0x06, 0x01, 0x03, 0x00, 0x01, 0x03, 0x01, 0x0F, 0x49,           // set STATUS MSG rate
     0xB5, 0x62, 0x06, 0x01, 0x03, 0x00, 0x01, 0x06, 0x01, 0x12, 0x4F,           // set SOL MSG rate
-    0xB5, 0x62, 0x06, 0x01, 0x03, 0x00, 0x01, 0x30, 0x00, 0x3B, 0xA2,           // disable SVINFO
+    0xB5, 0x62, 0x06, 0x01, 0x03, 0x00, 0x01, 0x30, 0x00, 0x3B, 0xA2            // disable SVINFO
 //    0xB5, 0x62, 0x06, 0x01, 0x03, 0x00, 0x01, 0x12, 0x01, 0x1E, 0x67            // set VELNED MSG rate
 };
 
@@ -44,6 +44,21 @@ static const unsigned char UBX_MSG_NMEA[] = {
     0xB5, 0x62, 0x06, 0x01, 0x03, 0x00, 0xF0, 0x02, 0x00, 0xFC, 0x13,           // GSA: GNSS DOP and Active Satellites
     0xB5, 0x62, 0x06, 0x01, 0x03, 0x00, 0xF0, 0x04, 0x00, 0xFE, 0x17            // RMC: Recommended Minimum data
 };
+*/
+static const unsigned char UBX_INIT[]  = {                          // PROGMEM array must be outside any function !!!
+     0xB5,0x62,0x06,0x01,0x03,0x00,0xF0,0x05,0x00,0xFF,0x19,                            //disable all default NMEA messages
+     0xB5,0x62,0x06,0x01,0x03,0x00,0xF0,0x03,0x00,0xFD,0x15,
+     0xB5,0x62,0x06,0x01,0x03,0x00,0xF0,0x01,0x00,0xFB,0x11,
+     0xB5,0x62,0x06,0x01,0x03,0x00,0xF0,0x00,0x00,0xFA,0x0F,
+     0xB5,0x62,0x06,0x01,0x03,0x00,0xF0,0x02,0x00,0xFC,0x13,
+     0xB5,0x62,0x06,0x01,0x03,0x00,0xF0,0x04,0x00,0xFE,0x17,
+     0xB5,0x62,0x06,0x01,0x03,0x00,0x01,0x02,0x01,0x0E,0x47,                            //set POSLLH MSG rate
+     0xB5,0x62,0x06,0x01,0x03,0x00,0x01,0x03,0x01,0x0F,0x49,                            //set STATUS MSG rate
+     0xB5,0x62,0x06,0x01,0x03,0x00,0x01,0x06,0x01,0x12,0x4F,                            //set SOL MSG rate
+     0xB5,0x62,0x06,0x01,0x03,0x00,0x01,0x12,0x01,0x1E,0x67,                            //set VELNED MSG rate
+     0xB5,0x62,0x06,0x16,0x08,0x00,0x03,0x07,0x03,0x00,0x51,0x08,0x00,0x00,0x8A,0x41,   //set WAAS to EGNOS
+     0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0xC8, 0x00, 0x01, 0x00, 0x01, 0x00, 0xDE, 0x6A //set rate to 5Hz
+   };
 
 // need to set this up
 #ifdef UBLOX_PED_MODE
@@ -71,12 +86,29 @@ static const uint8_t ubloxInit_NAV5_Airborne4G[] = {
 };
 #endif
 
-#define UBLOX_5HZ   {UBX_5HZ, sizeof(UBX_5HZ)}
-#define UBLOX_MSG_NAV  {UBX_MSG_NAV, sizeof(UBX_MSG_NAV)}
-#define UBLOX_MSG_NMEA {UBX_MSG_NMEA, sizeof(UBX_MSG_NMEA)}
-#define UBLOX_38400 {(unsigned char *)"$PUBX,41,1,0003,0001,38400,0*26\r\n",0} // inav
-//#define UBLOX_38400 {(unsigned char *)"$PUBX,41,1,0003,0003,38400,0*24\r\n",0} // aq orig
-#define UBLOX_CONFIGS UBLOX_MSG_NMEA, UBLOX_MSG_NAV, UBLOX_5HZ, UBLOX_38400
+
+#define UBLOX_BAUD 57600
+
+#if (UBLOX_BAUD==19200)
+#define UBLOX_RATE {(unsigned char *)"$PUBX,41,1,0003,0001,19200,0*23\r\n",0}
+#endif  
+#if (UBLOX_BAUD==38400)
+#define UBLOX_RATE {(unsigned char *)"$PUBX,41,1,0003,0001,38400,0*26\r\n",0}
+#endif  
+#if (UBLOX_BAUD==57600)
+#define UBLOX_RATE {(unsigned char *)"$PUBX,41,1,0003,0001,57600,0*2D\r\n",0}
+#endif  
+#if (UBLOX_BAUD==115200)
+#define UBLOX_RATE {(unsigned char *)"$PUBX,41,1,0003,0001,115200,0*1E\r\n",0}
+#endif  
+
+//#define UBLOX_PRT   {UBX_PRT, sizeof(UBX_PRT)}
+//#define UBLOX_5HZ   {UBX_5HZ, sizeof(UBX_5HZ)}
+//#define UBLOX_MSG_NAV  {UBX_MSG_NAV, sizeof(UBX_MSG_NAV)}
+//#define UBLOX_MSG_NMEA {UBX_MSG_NMEA, sizeof(UBX_MSG_NMEA)}
+#define UBLOX_INIT { UBX_INIT, sizeof(UBX_INIT) }
+
+#define UBLOX_CONFIGS UBLOX_RATE,UBLOX_INIT //UBLOX_MSG_NAV,UBLOX_5HZ
 
 // UBLOX binary message definitions
 struct ublox_NAV_STATUS { // 01 03 (16)
@@ -138,7 +170,6 @@ struct ublox_NAV_POSLLH { // 01 02 (28)
  union ublox_message {
   struct ublox_NAV_STATUS nav_status;
   struct ublox_NAV_POSLLH nav_posllh;
-  // struct ublox_NAV_VELNED nav_velned;
   struct ublox_NAV_SOL nav_sol;
   unsigned char raw[52];
 } ubloxMessage;
@@ -150,8 +181,48 @@ unsigned char  ubloxCKA,ubloxCKB;
 
 enum ubloxState{ WAIT_SYNC1, WAIT_SYNC2, GET_CLASS, GET_ID, GET_LL, GET_LH, GET_DATA, GET_CKA, GET_CKB  } ubloxProcessDataState;
 
+uint32_t init_speed[5] = {9600,19200,38400,57600,115200};
+
+void SerialGpsPrint(const char* str) {
+	//  void SerialGpsPrint(char str) {
+	char b;
+	while(str && (b = pgm_read_byte(str++))) {
+		GPS_SERIAL.write(b); 
+		#if defined(UBLOX)
+		delay(5);
+		#endif      
+	}
+}
+void ubloxSetup(){
+	for(uint8_t i=0;i<5;i++){
+		delay(100);
+		Serial.begin(init_speed[i]);  
+		Serial.flush();
+		#if (UBLOX_BAUD==19200)
+		SerialGpsPrint(PSTR("$PUBX,41,1,0003,0001,19200,0*23\r\n"));     // 19200 baud - minimal speed for 5Hz update rate
+		#endif  
+		#if (UBLOX_BAUD==38400)
+		SerialGpsPrint(PSTR("$PUBX,41,1,0003,0001,38400,0*26\r\n"));     // 38400 baud
+		#endif  
+		#if (UBLOX_BAUD==57600)
+		SerialGpsPrint(PSTR("$PUBX,41,1,0003,0001,57600,0*2D\r\n"));     // 57600 baud
+		#endif  
+		#if (UBLOX_BAUD==115200)
+		SerialGpsPrint(PSTR("$PUBX,41,1,0003,0001,115200,0*1E\r\n"));    // 115200 baud
+		#endif  
+	}
+	Serial.flush();
+	delay(100);
+	Serial.begin(UBLOX_BAUD);  
+	for(uint8_t i=0; i<sizeof(UBX_INIT); i++) {                        // send configuration data in UBX protocol
+		Serial.write(pgm_read_byte(UBX_INIT+i));
+		delay(5); //simulating a 38400baud pace (or less), otherwise commands are not accepted by the device.
+	}
+}
+
 // Initialize parser
 void ubloxInit() {
+	//ubloxSetup();
 	ubloxProcessDataState = WAIT_SYNC1;
 }
 

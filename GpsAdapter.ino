@@ -21,19 +21,13 @@
 #include "GpsDataType.h"
 
 #define UseGPSUBLOX
-#define GPS_SERIAL Serial
 
 struct gpsData gpsData; // This is accessed by the parser functions directly !
 
 // default port
 // remove?
-#ifndef GPS_SERIAL
-  #ifdef AeroQuadSTM32
-    #define GPS_SERIAL Serial2
-  #else
-    #define GPS_SERIAL Serial1
-  #endif
-#endif
+
+
 
 // default to all protocols
 #if (!defined(UseGPSUBLOX) && !defined(UseGPSNMEA) && !defined(UseGPSMTK16))
@@ -68,7 +62,7 @@ struct gpsType {
 };
 
 byte  gpsConfigsSent;  // number of cfg msgs sent
-byte  gpsConfigTimer;  // 0 = no more work, 1 = send now, >1 wait
+byte  gpsConfigTimer = 1;  // 0 = no more work, 1 = send now, >1 wait
 
 const unsigned long gpsBaudRates[] = { 9600L, 19200L, 38400L, 57600L, 115200L};
 const struct gpsType gpsTypes[] = {
@@ -113,11 +107,11 @@ struct gpsConfigEntry gpsConfigEntries[] = {
 // Send initialization strings to GPS one by one,
 // it supports both string and binary packets
 void gpsSendConfig() {
-
   if (gpsConfigEntries[gpsConfigsSent].data) {
     if (gpsConfigEntries[gpsConfigsSent].len) {
-      for (int i=0; i<gpsConfigEntries[gpsConfigsSent].len; i++) {
+      for(uint8_t i=0; i<gpsConfigEntries[gpsConfigsSent].len; i++) {                        // send configuration data in UBX protocol
         GPS_SERIAL.write(gpsConfigEntries[gpsConfigsSent].data[i]);
+        delay(5); //simulating a 38400baud pace (or less), otherwise commands are not accepted by the device.
       }
       gpsConfigTimer=gpsConfigEntries[gpsConfigsSent].len;
     }
@@ -202,12 +196,14 @@ void updateGps() {
       if (gpsData.baudrate >= GPS_NUMBAUDRATES) {
 	      gpsData.baudrate = 0;
       }
+
       GPS_SERIAL.begin(gpsBaudRates[gpsData.baudrate]);
     }
 
     // ensure detection state (if we lost connection to GPS)
-    gpsData.state = GPS_DETECTING;
-
+	gpsData.state = GPS_DETECTING;
+	gpsConfigsSent = 0;
+	gpsConfigTimer = 1;
     //  reinitialize all parsers
     for (gpsData.type=0; (gpsData.type < GPS_NUMTYPES); gpsData.type++) {
       gpsTypes[gpsData.type].init();
